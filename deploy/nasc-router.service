@@ -1,0 +1,16 @@
+[Unit]
+Description=NASC router (self-hosted 3DS titles -> account server, the rest -> nasc.pretendo.cc)
+After=network.target
+
+[Service]
+User=nasc
+WorkingDirectory=/opt/nasc-router
+# PN_ACT_CONFIG_MONGO_CONNECTION_STRING (the account server's database)
+EnvironmentFile=/opt/nasc-router/.env
+Environment=NASC_LOCAL_HOST=nasc.example.org
+ExecStart=/usr/bin/node /opt/nasc-router/nasc-router.js
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

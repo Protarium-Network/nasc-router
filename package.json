@@ -1,0 +1,10 @@
+{
+  "name": "nasc-router",
+  "version": "1.0.0",
+  "description": "NASC front for 3DS: self-hosted titles go to a Pretendo account server, everything else to nasc.pretendo.cc",
+  "main": "nasc-router.js",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "mongodb": "^6.0.0"
+  }
+}
