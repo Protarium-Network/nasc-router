@@ -5,6 +5,7 @@
 const http = require('node:http');
 const https = require('node:https');
 const crypto = require('node:crypto');
+const { encrypt, decrypt } = require('./nex-password-crypto.js');
 const { MongoClient } = require('mongodb'); // reuse the one installed with the Pretendo account server
 
 const PORT = Number(process.env.NASC_ROUTER_PORT || 7070);
@@ -45,6 +46,13 @@ function limited(ip) {
 	return ++h[0] > 20;
 }
 
+// The NEX password is stored encrypted, not hashed: the account server hands it to the game servers, which derive the
+// console's login key from it (see nex-password-crypto.js). It is only ever read back decrypted.
+function sameSecret(a, b) {
+	const left = Buffer.from(String(a ?? '')), right = Buffer.from(b);
+	return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+
 async function register(params, ip) {
 	const pid = Number(params.get('pid'));
 	const password = params.get('password') || '';
@@ -53,9 +61,9 @@ async function register(params, ip) {
 
 	const nexaccounts = mongo.db().collection('nexaccounts');
 	const existing = await nexaccounts.findOne({ pid }, { projection: { password: 1 } });
-	if (existing) return existing.password === password ? [200, { ok: true, pid }] : [409, { error: 'pid already registered' }];
+	if (existing) return sameSecret(decrypt(existing.password), password) ? [200, { ok: true, pid }] : [409, { error: 'pid already registered' }];
 
-	await nexaccounts.insertOne({ pid, password, device_type: '3ds', access_level: 0, server_access_level: 'prod', friend_code: friendCode(pid), __v: 0 });
+	await nexaccounts.insertOne({ pid, password: encrypt(password), device_type: '3ds', access_level: 0, server_access_level: 'prod', friend_code: friendCode(pid), __v: 0 });
 	console.log(new Date().toISOString(), 'REGISTER pid', pid);
 	return [200, { ok: true, pid }];
 }
